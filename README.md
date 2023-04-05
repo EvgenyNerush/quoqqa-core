@@ -1,0 +1,2 @@
+# quoqqa-core
+wierd fishes
