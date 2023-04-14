@@ -1,15 +1,17 @@
 // This is a reference modelling which demonstrates a single-thread performance
 // of Vay's and midpointR pushers. It can be then easily compared with other
-// codes/algorithms of interest.
-
+// codes/algorithms of interest. Run it with the following command:
+//
+// zig run performance-test.zig -O ReleaseFast
+//
 // The rotation of a big number of particles in a constant magnetic field is simulated.
 // The test should print "8.0..." as a result.
-// On Xeon(R) X5550 the test takes about 175 seconds.
+// On Xeon(R) X5550 the test takes about 110 seconds.
 
 const std = @import("std");
 const Vec3 = @import("src/core.zig").Vec3;
-const vay3P = @import("src/vay.zig").vay3P;
-const midpoint3R = @import("src/midpointR.zig").midpoint3R;
+const vay3P = @import("src/vay.zig").simdVay3P;
+const midpoint3R = @import("src/midpointR.zig").simdMidpoint3R;
 const print = std.debug.print;
 
 const Particle = struct { x: f64, y: f64, z: f64, px: f64, py: f64, pz: f64 };
@@ -26,7 +28,7 @@ const time: f64 = 10 * period;
 const n_time_steps: i32 = 1000;
 const dt: f64 = time / @intToFloat(f64, n_time_steps);
 
-fn push(particle: Particle) Particle {
+fn step(particle: Particle) Particle {
     const p0 = Vec3{ .x = particle.px, .y = particle.py, .z = particle.pz };
     const p = vay3P(p0, charge_mass_ratio, dt, electric_field, magnetic_field);
 
@@ -37,11 +39,11 @@ fn push(particle: Particle) Particle {
     return Particle{ .x = r.x, .y = r.y, .z = r.z, .px = p.x, .py = p.y, .pz = p.z };
 }
 
-fn push_many(num_steps: i32, initial_particle: Particle) Particle {
-    var n = num_steps;
+fn steps(num_steps: i32, initial_particle: Particle) Particle {
+    var n: i32 = 0;
     var particle = initial_particle;
-    while (n > 0) : (n -= 1) {
-        particle = push(particle);
+    while (n < num_steps) : (n += 1) {
+        particle = step(particle);
     }
     return particle;
 }
@@ -51,7 +53,9 @@ pub fn main() !void {
 
     const n_particles: usize = 1_000_000;
 
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
     const ArrayList = std.ArrayList;
     var particles = try ArrayList(Particle).initCapacity(allocator, n_particles);
     defer particles.deinit();
@@ -63,15 +67,15 @@ pub fn main() !void {
     }
 
     const time1 = std.time.milliTimestamp();
-    for (particles.items) |_, index| {
-        particles.items[index] = push_many(n_time_steps, particles.items[index]);
+    for (particles.items) |*particle| {
+        particle.* = steps(n_time_steps, particle.*);
     }
     const time2 = std.time.milliTimestamp();
     print("computation takes {d} ms\n", .{time2 - time1});
 
     var sum: f64 = 0.0;
-    for (particles.items) |_, index| {
-        sum += particles.items[index].px;
+    for (particles.items) |particle| {
+        sum += particle.px;
     }
     print("result = {e}\n", .{sum / @intToFloat(f64, n_particles)});
     print("bye!\n", .{});
