@@ -8,7 +8,8 @@ const core = @import("src/core.zig");
 const Vec3 = core.Vec3;
 
 // place here the momentum pusher you want to test
-const pusher3P = @import("src/vay.zig").vay3P;
+//const pusher3P = @import("src/vay.zig").vay3P;
+const pusher3P = @import("src/higuera-cary.zig").higueraCary;
 
 fn test_it(n_steps: i32) bool {
     const b = Vec3{ .x = 0.7, .y = 1.1, .z = 2.9 }; // just some magnetic field
@@ -49,7 +50,7 @@ pub fn main() !void {
 
     var i: i32 = 0;
     while (i < n_tests) : (i += 1) {
-        const n_steps = rand.intRangeAtMost(i32, 5, 200);
+        const n_steps = rand.intRangeAtMost(i32, 2, 200);
         if (!test_it(n_steps)) {
             print("test failed for n_steps = {d},\n", .{n_steps});
             break;

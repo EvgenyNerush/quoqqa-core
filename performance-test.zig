@@ -4,13 +4,16 @@
 //
 // zig run performance-test.zig -O ReleaseFast
 //
-// The test should print  as a result "x = 1." (or 0.9...) and "px = 10.00..." (or "9.99...").
+// The test should print as a result "x = 1." (or 0.9...) and "px = 10.00..." (or "9.99...").
 // On Xeon(R) X5550 the test takes about 110 seconds for Vay's pusher.
 
 const std = @import("std");
 const Vec3 = @import("src/core.zig").Vec3;
-const pusher3P = @import("src/vay.zig").vay3P; // place here the momentum pusher you want to test
-const pusher3R = @import("src/midpointR.zig").midpoint3R; // place here the coordinate pusher you want to test
+// place here the momentum pusher you want to test
+//const pusher3P = @import("src/vay.zig").vay3P;
+const pusher3P = @import("src/higuera-cary.zig").higueraCary;
+// place here the coordinate pusher you want to test
+const pusher3R = @import("src/midpointR.zig").midpoint3R;
 const print = std.debug.print;
 
 const Particle = struct { x: f64, y: f64, z: f64, px: f64, py: f64, pz: f64 };
