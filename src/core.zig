@@ -7,12 +7,13 @@ pub fn mult(comptime T: type, a: f64, v: T) T {
         // SIMD vectors of length 3
         @Vector(3, f64) => {
             const s = @splat(3, a);
-            s * a;
+            s * v;
         },
         else => unreachable,
     };
 }
 
+// sum of two vectors
 pub fn plus(comptime T: type, a: T, b: T) T {
     return switch (T) {
         Vec3 => Vec3{ .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z },
@@ -21,6 +22,7 @@ pub fn plus(comptime T: type, a: T, b: T) T {
     };
 }
 
+// sum of three vectors
 pub fn plus3(comptime T: type, a: T, b: T, c: T) T {
     return plus(T, plus(T, a, b), c);
 }
