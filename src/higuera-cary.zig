@@ -24,7 +24,7 @@ pub fn higueraCary(
     const beta_u_ = core.dot(Vec3, beta, u_);
     const beta_u_u_ = core.mult(Vec3, beta_u_, u_);
     // see (20)
-    const gamma_new = sqrt(0.5 * (s + sqrt(s * s + 4 * (core.norm2(Vec3, beta) + core.norm2(Vec3, beta_u_u_)))));
+    const gamma_new = sqrt(0.5 * (s + sqrt(s * s + 4 * (core.norm2(Vec3, beta) + beta_u_ * beta_u_))));
 
     const m = 1 / (1 + core.norm2(Vec3, beta) / (gamma_new * gamma_new));
     const v = core.mult(Vec3, -1 / gamma_new, core.cross(Vec3, beta, u_));

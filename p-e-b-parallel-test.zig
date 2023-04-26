@@ -1,7 +1,7 @@
-// Electron momentum is parallel to magnetic and electric fields, which amplitude
-// change in time such that the electron should stop at the end.
-// The residual electron momentum is compared with twice of the error caused by the terms
-// out of accuracy of midpoint methods.
+// Magnetic and electric fields are parallel to each other. The electric field amplitude
+// changes in time such that the electron momentum parallel to it is zero at the end.
+// The residual "parallel" component of the electron momentum is compared with
+// twice of the error caused by the terms out of the accuracy of midpoint methods.
 
 const std = @import("std");
 const core = @import("src/core.zig");
@@ -12,9 +12,11 @@ const Vec3 = core.Vec3;
 const pusher3P = @import("src/higuera-cary.zig").higueraCary;
 
 fn test_it(n_steps: i32) bool {
-    const p_initial = Vec3{ .x = 0.35, .y = 0.55, .z = 0.42 }; // the initial momentum
-    const b = p_initial; // just some magnetic field parallel to `p_initial`
-    const e_base = p_initial; // the electric field at maximum
+    const e_base = Vec3{ .x = 0.35, .y = 0.55, .z = 0.42 }; // the electric field at maximum
+    const b = e_base; // just some magnetic field parallel to `e_base`
+    const p_parallel = e_base;
+    const p_perp = Vec3{ .x = -e_base.z, .y = 0, .z = e_base.x }; // perpendicular to `e_base`
+    const p_initial = core.plus(Vec3, p_parallel, p_perp);
 
     const time = 0.5 * std.math.pi;
     const time_step = time / @intToFloat(f64, n_steps);
@@ -27,8 +29,8 @@ fn test_it(n_steps: i32) bool {
         p = pusher3P(p, -1, time_step, e, b);
     }
 
-    const err = p; // because analytically `p` should be zero
-    const relative_error = std.math.sqrt(core.norm2(Vec3, err) / core.norm2(Vec3, p_initial));
+    const err = core.dot(Vec3, p, e_base); // analytically parallel part of `p` should be zero at `time`
+    const relative_error = std.math.absFloat(err / core.dot(Vec3, p_initial, e_base));
 
     const is_ok = relative_error < 2 * std.math.pow(f64, time_step, 2) * time / 6;
     return is_ok;
