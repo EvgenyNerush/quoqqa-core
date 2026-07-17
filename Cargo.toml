@@ -1,0 +1,7 @@
+[package]
+name = "quoqqa_core"
+version = "0.2.0"
+edition = "2024"
+
+[dependencies]
+rand = "0.10.2"
