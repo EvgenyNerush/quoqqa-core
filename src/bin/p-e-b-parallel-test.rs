@@ -1,33 +1,35 @@
-// In a constant magnetic field the electron momentum change its direction
-// to the opposite after a half period of the rotation. It is checked for
-// different time steps here. Note that it is assumed here that the momentum
-// pusher has single step error less than O((time step)^3).
+// Magnetic and electric fields are parallel to each other. The electric field amplitude
+// changes in time such that the electron momentum parallel to it is zero at the end.
+// The residual "parallel" component of the electron momentum is compared with
+// twice of the error caused by the terms out of the accuracy of the midpoint methods.
 
 use std::f64::consts::PI;
 use rand::random_range;
-use quoqqa_core::{Vec3, Norm, vay3p, higuera_cary};
+use quoqqa_core::{Vec3, Dot, vay3p, higuera_cary};
 use quoqqa_core::pretty_print::{*};
 
 fn test(pusher: fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3, n_steps: i32) -> (bool, f64) {
-    let b = Vec3{ x: 0.7, y: 1.1, z: 2.9 }; // just some magnetic field
-    let p_initial = Vec3{ x: -b.z, y: 0.0, z: b.x }; // the initial momentum perpendicular to `b`
 
-    let b_ampl = b.norm2().sqrt();
-    let gamma_initial = (1.0 + p_initial.norm2()).sqrt();
-    let period = 2.0 * PI * gamma_initial / b_ampl;
-    let time_step = 0.5 * period / (n_steps as f64);
-    let e = Vec3{ x: 0.0, y: 0.0, z: 0.0 }; // zero electric field
+    let e_base = Vec3{ x: 0.35, y: 0.55, z: 0.42 }; // the electric field at maximum
+    let b = e_base; // just some magnetic field parallel to `e_base`
+    let p_parallel = e_base;
+    let p_perp = Vec3{ x: -e_base.z, y: 0.0, z: e_base.x }; // perpendicular to `e_base`
+    let p_initial = p_parallel + p_perp;
+
+    let time = 0.5 * PI;
+    let time_step = time / (n_steps as f64);
 
     let mut p = p_initial;
-    for _i in 0..n_steps {
+    for i in 0..n_steps {
+        let t = time_step * (0.5 + (i as f64));
+        let e = e_base * t.cos();
         p = pusher(p, -1.0, time_step, e, b);
     }
 
-    let err = p_initial + p;
-    let relative_error = (err.norm2() / p_initial.norm2()).sqrt();
+    let err = p.dot(e_base); // analytically parallel part of `p` should be zero at `time`
+    let relative_error = (err / p_initial.dot(e_base)).abs();
 
-    // true if the error is smaller than approximately 2 * (the estimate for error of midpoint methods)
-    let estimate = (time_step * b_ampl / gamma_initial).powf(2.0);
+    let estimate = 2.0 * time_step.powi(2) * time / 6.0;
     let is_ok = relative_error < estimate;
     (is_ok, relative_error / estimate)
 }
