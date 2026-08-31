@@ -45,7 +45,8 @@ fn main() {
     let mut score: f64;
 
     for (pusher_name, function_name, pusher) in
-    [("Vay", "vay3p", vay3p as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3),
+    [("Boris", "boris", boris as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3),
+    ("Vay", "vay3p", vay3p as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3),
     ("Higuera-Cary", "higuera_cary", higuera_cary as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3)] {
         print!("Testing {} pusher {}...", blue_bg(pusher_name), italic(function_name));
         ok = true;

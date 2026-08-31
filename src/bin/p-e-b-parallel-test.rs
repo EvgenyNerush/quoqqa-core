@@ -5,7 +5,7 @@
 
 use std::f64::consts::PI;
 use rand::random_range;
-use quoqqa_core::{Vec3, Dot, vay3p, higuera_cary};
+use quoqqa_core::{Vec3, Dot, boris, vay3p, higuera_cary};
 use quoqqa_core::pretty_print::{*};
 
 fn test(pusher: fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3, n_steps: i32) -> (bool, f64) {
@@ -42,7 +42,8 @@ fn main() {
     let mut score: f64;
 
     for (pusher_name, function_name, pusher) in
-    [("Vay", "vay3p", vay3p as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3),
+    [("Boris", "boris", boris as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3),
+    ("Vay", "vay3p", vay3p as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3),
     ("Higuera-Cary", "higuera_cary", higuera_cary as fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3)] {
         print!("Testing {} pusher {}...", blue_bg(pusher_name), italic(function_name));
         ok = true;

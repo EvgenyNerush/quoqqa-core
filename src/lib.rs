@@ -136,6 +136,32 @@ pub fn midpoint3r(r: Vec3, v: Vec3, time_step: f64) -> Vec3 {
 }
 
 // Returns momentum a time step forward, in three-dimensional space.
+// Uses Boris pusher proposed in J.P. Boris, in Proc. 4th Conf. Numerical
+// Simulation of Plasmas (NRL, Washington D.C., 1970), pp. 3-67,
+// and reviewed in C.K. Birdsall and A.B. Langdon, "Plasma Physics via
+// Computer Simulation" (2004), Ch. 4.
+pub fn boris(
+    p: Vec3, // momentum
+    charge_mass_ratio: f64,
+    time_step: f64,
+    e: Vec3, // electric field
+    b: Vec3, // magnetic field
+) -> Vec3 {
+    let q: f64 = time_step * charge_mass_ratio / 2.0;
+    let epsilon = e * q;
+    // Half electric kick: u⁻ = u_i + (qΔt/2m) E
+    let u_minus = p + epsilon;
+    // Rotation via magnetic field
+    let gamma = gamma_e(u_minus);
+    let t = b * (q / gamma);
+    let s = t * (2.0 / (1.0 + t.norm2()));
+    let u_prime = u_minus + u_minus.cross(t);
+    let u_plus = u_minus + u_prime.cross(s);
+    // Second half electric kick: u_f = u⁺ + (qΔt/2m) E
+    u_plus + epsilon
+}
+
+// Returns momentum a time step forward, in three-dimensional space.
 // Uses midpoint pusher proposed in J.L. Vay, Phys. Plasmas 15, 056701 (2008),
 // https://dx.doi.org/10.1063/1.2837054
 pub fn vay3p(
