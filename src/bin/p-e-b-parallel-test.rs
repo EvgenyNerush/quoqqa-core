@@ -49,10 +49,10 @@ fn main() {
         score = 0.0;
         for _i in 0..n_tryes {
             let n_timesteps = random_range(2..200);
-            let (is_ok, relative_error) = test(pusher, n_timesteps);
-            score += relative_error;
+            let (is_ok, error) = test(pusher, n_timesteps);
+            score += error;
             if !is_ok {
-                println!(" test {} for n_steps = {}", red_bg("failed"), n_timesteps);
+                println!(" test {} for n_steps = {}", red_bg("failed!"), n_timesteps);
                 ok = false;
                 break;
             }

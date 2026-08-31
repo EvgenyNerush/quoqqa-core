@@ -181,13 +181,13 @@ pub fn higuera_cary(
     let beta = b * q;
     let s = 1.0 + u_.norm2() - beta.norm2();
     let beta_u_ = beta.dot(u_);
-    let beta_u_u_ = u_ * beta_u_;
+    let beta_beta_u_ = beta * beta_u_;
     // see (20)
     let gamma_new = (0.5 * (s + (s * s + 4.0 * (beta.norm2() + beta_u_ * beta_u_)).sqrt())).sqrt();
 
     let m = 1.0 / (1.0 + beta.norm2() / (gamma_new * gamma_new));
     let v = beta.cross(u_) / (-gamma_new);
-    let w = beta_u_u_ / (gamma_new * gamma_new);
+    let w = beta_beta_u_ / (gamma_new * gamma_new);
     // see (17)
     let u_new = (u_ + v + w) * m;
 

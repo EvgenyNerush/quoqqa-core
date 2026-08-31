@@ -9,7 +9,7 @@ use quoqqa_core::pretty_print::{*};
 fn test(pusher: fn(Vec3, f64, f64, Vec3, Vec3) -> Vec3, time: f64, n_steps: i32) -> (bool, f64) {
 
     let g = 0.9; // gradient of magnetic field magnitude along the y axis
-    let p_initial = Vec3{ x: 1.5, y: -0.2, z: 1.0 };
+    let p_initial = Vec3{ x: 1.5, y: -0.2, z: 0.55 };
     let b0 = gamma_e(p_initial); // magnetic field at the origin, along the z axis,
                                  // such that p_perp rotation with omega approx 1
 
