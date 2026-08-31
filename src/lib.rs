@@ -172,7 +172,6 @@ pub fn higuera_cary(
     e: Vec3, // electric field
     b: Vec3, // magnetic field
 ) -> Vec3 {
-    let gamma: f64 = (1.0 + p.norm2()).sqrt();
     let q: f64 = time_step * charge_mass_ratio / 2.0;
     let epsilon = e * q;
     // see Eq. (18) in Higuera 2017
@@ -188,7 +187,7 @@ pub fn higuera_cary(
 
     let m = 1.0 / (1.0 + beta.norm2() / (gamma_new * gamma_new));
     let v = beta.cross(u_) / (-gamma_new);
-    let w = beta_u_u_ / (gamma * gamma);
+    let w = beta_u_u_ / (gamma_new * gamma_new);
     // see (17)
     let u_new = (u_ + v + w) * m;
 
