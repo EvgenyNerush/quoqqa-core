@@ -222,3 +222,114 @@ pub fn higuera_cary(
     let t = epsilon + u_new_x_beta / gamma_new;
     p + t * 2.0 // u_f
 }
+
+// sin(x) / x, see Sec. 5 in Decyk 2023
+fn sinc(x: f64) -> f64 {
+    if x == 0.0 { 1.0 } else { x.sin() / x }
+}
+
+// (cos(x) - 1) / x^2, see Sec. 5 in Decyk 2023;
+// uses the exact identity cos(x) - 1 = -2 sin^2(x/2)
+fn cosd(x: f64) -> f64 {
+    -0.5 * sinc(0.5 * x).powi(2)
+}
+
+// (sin(x) - x) / x^3, see Sec. 5 in Decyk 2023
+fn sind(x: f64) -> f64 {
+    if x.abs() < 0.1 {
+        let x2 = x * x;
+        -1.0 / 6.0 * (1.0 - x2 / 20.0 * (1.0 - x2 / 42.0 * (1.0 - x2 / 72.0)))
+    } else {
+        (x.sin() - x) / (x * x * x)
+    }
+}
+
+// Returns the Lorentz factor gamma_a = time_step / (proper time of the step), held fixed during
+// the step of the analytic Boris pusher. One Newton iteration, see (29), solves time(tau) = time_step
+// with time(tau) from (55) and its derivative gamma(tau) from (54) in Decyk 2023.
+fn gamma_a_newton(
+    p: Vec3,            
+    e_tilde_par: Vec3,  // electric field parallel to B, times charge_mass_ratio
+    e_tilde_perp: Vec3, // electric field perpendicular to B, times charge_mass_ratio
+    omega: Vec3,        // magnetic field times charge_mass_ratio
+    time_step: f64,
+) -> f64 {
+    let omega_norm = omega.norm();
+    let gamma_0 = gamma_e(p);
+    let e_par_p = e_tilde_par.dot(p); 
+    let e_par2 = e_tilde_par.norm2();
+    let e_perp_p = e_tilde_perp.dot(p);
+    let e_perp_p_omega = e_tilde_perp.dot(p.cross(omega)); 
+    let e_perp2 = e_tilde_perp.norm2();
+
+    // see (54)
+    let gamma_of_tau = |d_tau: f64, gamma_a: f64| -> f64 {
+        let e_perp_du = gamma_a * e_perp2 + e_perp_p_omega; 
+        let x = omega_norm * d_tau;
+        gamma_0 + e_par_p * d_tau + 0.5 * gamma_a * e_par2 * d_tau * d_tau
+            + e_perp_p * sinc(x) * d_tau
+            - e_perp_du * cosd(x) * d_tau * d_tau
+    };
+    // see (55)
+    let time_of_tau = |d_tau: f64, gamma_a: f64| -> f64 {
+        let e_perp_du = gamma_a * e_perp2 + e_perp_p_omega;
+        let x = omega_norm * d_tau;
+        gamma_0 * d_tau
+            + 0.5 * e_par_p * d_tau * d_tau
+            + gamma_a * e_par2 * d_tau * d_tau * d_tau / 6.0
+            - e_perp_p * cosd(x) * d_tau * d_tau
+            - e_perp_du * sind(x) * d_tau * d_tau * d_tau
+    };
+
+    // see (29), starting from gamma_a = gamma_0
+    let d_tau_1 = time_step / gamma_0;
+    let d_tau_2 = d_tau_1
+        - (time_of_tau(d_tau_1, gamma_0) - time_step) / gamma_of_tau(d_tau_1, gamma_0);
+    time_step / d_tau_2
+}
+
+// Returns momentum a time step forward, in three-dimensional space.
+// Uses analytic Boris pusher (analyic relativistic in papers' terms, AR, version) proposed in V.K. Decyk, W.B. Mori and F. Li,
+// Comput. Phys. Commun. 282, 108559 (2023),
+// https://doi.org/10.1016/j.cpc.2022.108559
+pub fn boris_analytic(
+    p: Vec3, // momentum
+    charge_mass_ratio: f64,
+    time_step: f64,
+    e: Vec3, // electric field
+    b: Vec3, // magnetic field
+) -> Vec3 {
+    let omega: Vec3 = b * charge_mass_ratio;
+    let omega_norm = omega.norm();
+
+    let omega_unit: Vec3 = if omega_norm != 0.0 {
+        omega / omega_norm
+    } else {
+        Vec3 { x: 0.0, y: 0.0, z: 0.0 }
+    };
+    let e_tilde = e * charge_mass_ratio;
+    let e_tilde_par = omega_unit * e_tilde.dot(omega_unit); // see (15)
+    let e_tilde_perp = e_tilde - e_tilde_par; // see (16)
+
+    let gamma_a = gamma_a_newton(p, e_tilde_par, e_tilde_perp, omega, time_step);
+    let phi: f64 = omega_norm * time_step / gamma_a;
+
+    // duration of the perpendicular half kick, see (35); it is time_step / 2 for B = 0, see (53)
+    let kick_time_perp = if omega_norm != 0.0 {
+        gamma_a / omega_norm * (phi / 2.0).tan()
+    } else {
+        time_step / 2.0
+    };
+    let u_ekick: Vec3 = e_tilde_par * (time_step / 2.0) + e_tilde_perp * kick_time_perp;
+
+    // see (32), the first half-step, electric kick
+    let p1: Vec3 = p + u_ekick;
+
+    // see (33), rotate the particle with the magnetic field
+    let p2: Vec3 = p1 * phi.cos()
+        + p1.cross(omega_unit) * phi.sin()
+        + omega_unit * ((1.0 - phi.cos()) * p1.dot(omega_unit));
+
+    // see (34), the second half-step, electric kick again
+    p2 + u_ekick
+}
